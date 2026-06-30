@@ -1,0 +1,44 @@
+{
+  "name": "tokenbar",
+  "version": "0.1.0",
+  "description": "Native macOS menu bar token counter for local Codex and Claude logs.",
+  "license": "MIT",
+  "author": "Santiago Pandal",
+  "homepage": "https://github.com/SantiPandal/tokenbar#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SantiPandal/tokenbar.git"
+  },
+  "bugs": {
+    "url": "https://github.com/SantiPandal/tokenbar/issues"
+  },
+  "type": "module",
+  "bin": {
+    "tokenbar": "bin/tokenbar.mjs"
+  },
+  "scripts": {
+    "build:app": "scripts/build_app.sh",
+    "pack:check": "npm pack --dry-run",
+    "snapshot": "swift run -c release TokenBar --print-snapshot"
+  },
+  "files": [
+    "Package.swift",
+    "Sources",
+    "bin",
+    "scripts",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": [
+    "codex",
+    "claude",
+    "macos",
+    "menu-bar",
+    "swift",
+    "tokens",
+    "token-usage"
+  ]
+}

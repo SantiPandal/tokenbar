@@ -1,0 +1,14 @@
+.DS_Store
+.build/
+build/
+artifacts/
+.git/
+.github/
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.tgz
+.env
+.env.*
