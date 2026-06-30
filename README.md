@@ -4,6 +4,8 @@ Native macOS menu bar app for tracking local AI token usage across Codex and Cla
 
 It reads your local JSONL logs, counts consumed and produced tokens live, and shows day, week, and month views with model-level breakdowns.
 
+![TokenBar macOS menu bar popover](docs/tokenbar-screenshot.png)
+
 ## Install
 
 ```bash
