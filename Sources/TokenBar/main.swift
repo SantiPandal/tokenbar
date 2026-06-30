@@ -136,6 +136,11 @@ final class PopoverVisibility: ObservableObject {
     @Published var isVisible = false
 }
 
+@MainActor
+final class PeriodSelection: ObservableObject {
+    @Published var period: PeriodKind = .month
+}
+
 final class LogIndexer: @unchecked Sendable {
     private let fileManager = FileManager.default
     private let home: URL
@@ -571,6 +576,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
     private var popover: NSPopover?
     private let monitor = TokenMonitor()
     private let visibility = PopoverVisibility()
+    private let selection = PeriodSelection()
     private var cancellables: Set<AnyCancellable> = []
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -604,14 +610,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
         let popover = NSPopover()
         popover.behavior = .transient
         popover.delegate = self
-        popover.contentSize = NSSize(width: 380, height: 590)
-        popover.contentViewController = NSHostingController(rootView: TokenPopoverView(monitor: monitor, visibility: visibility))
+        popover.contentSize = NSSize(width: 380, height: 640)
+        popover.contentViewController = NSHostingController(rootView: TokenPopoverView(monitor: monitor, visibility: visibility, selection: selection))
         self.popover = popover
 
-        monitor.$snapshot
+        monitor.$snapshot.combineLatest(selection.$period)
             .receive(on: DispatchQueue.main)
-            .sink { [weak self] snapshot in
-                self?.updateStatusTitle(snapshot)
+            .sink { [weak self] snapshot, period in
+                self?.updateStatusTitle(snapshot, period: period)
             }
             .store(in: &cancellables)
     }
@@ -634,9 +640,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
         visibility.isVisible = false
     }
 
-    private func updateStatusTitle(_ snapshot: TokenSnapshot) {
-        let todayTotal = snapshot.periods[.day]?.totals.total ?? 0
-        let title = snapshot.isIndexing ? "Indexing" : ShortFormat.tokens(todayTotal)
+    private func updateStatusTitle(_ snapshot: TokenSnapshot, period: PeriodKind) {
+        let periodTotal = snapshot.periods[period]?.totals.total ?? 0
+        let title = snapshot.isIndexing ? "Indexing" : ShortFormat.tokens(periodTotal)
         statusItem?.button?.title = " \(title)"
     }
 }
@@ -644,16 +650,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
 struct TokenPopoverView: View {
     @ObservedObject var monitor: TokenMonitor
     @ObservedObject var visibility: PopoverVisibility
-    @State private var period: PeriodKind = .day
+    @ObservedObject var selection: PeriodSelection
 
     var body: some View {
         let snapshot = monitor.snapshot
-        let stats = snapshot.periods[period]
+        let stats = snapshot.periods[selection.period]
 
         VStack(alignment: .leading, spacing: 16) {
             header(snapshot: snapshot, stats: stats)
 
-            Picker("", selection: $period) {
+            Picker("", selection: $selection.period) {
                 ForEach(PeriodKind.allCases) { period in
                     Text(period.rawValue).tag(period)
                 }
@@ -672,10 +678,10 @@ struct TokenPopoverView: View {
             Spacer(minLength: 0)
             footer(snapshot: snapshot)
         }
-        .padding(.top, 12)
+        .padding(.top, 20)
         .padding(.horizontal, 18)
         .padding(.bottom, 16)
-        .frame(width: 380, height: 590)
+        .frame(width: 380, height: 640)
         .background(.regularMaterial)
     }
 
@@ -874,7 +880,7 @@ struct TokenPopoverView: View {
         let formatter = DateFormatter()
         formatter.dateStyle = .medium
         formatter.timeStyle = .none
-        if period == .day {
+        if selection.period == .day {
             return formatter.string(from: interval.start)
         }
         let end = interval.end.addingTimeInterval(-1)
@@ -883,22 +889,22 @@ struct TokenPopoverView: View {
 
     private func bucketLabel(_ date: Date) -> String {
         let formatter = DateFormatter()
-        formatter.dateFormat = period == .day ? "HH:00" : "MMM d"
+        formatter.dateFormat = selection.period == .day ? "HH:00" : "MMM d"
         return formatter.string(from: date)
     }
 
     private func axisLabel(_ date: Date, isStart: Bool) -> String {
-        if period == .day {
+        if selection.period == .day {
             return isStart ? "12 AM" : "Now"
         }
 
         let formatter = DateFormatter()
-        formatter.dateFormat = period == .week ? "EEE" : "MMM d"
+        formatter.dateFormat = selection.period == .week ? "EEE" : "MMM d"
         return isStart ? formatter.string(from: date) : "Today"
     }
 
     private var chartTitle: String {
-        switch period {
+        switch selection.period {
         case .day:
             return "Hourly tokens today"
         case .week:
@@ -909,7 +915,7 @@ struct TokenPopoverView: View {
     }
 
     private var modelSectionTitle: String {
-        switch period {
+        switch selection.period {
         case .day:
             return "Models today"
         case .week:

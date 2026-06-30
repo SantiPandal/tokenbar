@@ -34,7 +34,7 @@ xcode-select --install
 
 ## What It Shows
 
-- Menu bar total for today
+- Menu bar total for the selected period
 - Day, week, and month filters
 - Consumed input tokens
 - Produced output tokens
